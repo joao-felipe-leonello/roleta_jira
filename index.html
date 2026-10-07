@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roleta da Daily</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #1e1f26; color: #fff; font-family: system-ui, sans-serif; }
+  main { display: grid; justify-items: center; gap: 24px; padding: 16px; }
+  .wheel { position: relative; width: min(90vw, 480px); aspect-ratio: 1; }
+  .wheel::before { content: ""; position: absolute; top: -6px; left: 50%; transform: translateX(-50%); border: 16px solid transparent; border-top: 28px solid #fff; z-index: 1; }
+  canvas { width: 100%; height: 100%; transition: transform 5s cubic-bezier(.17,.67,.12,.99); }
+  button { font-size: 1.2rem; padding: 12px 32px; border: 0; border-radius: 8px; background: #0c66e4; color: #fff; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
+  #result { font-size: 1.6rem; min-height: 2em; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Quem abre o Jira hoje?</h1>
+  <div class="wheel"><canvas id="c" width="960" height="960"></canvas></div>
+  <button id="spin">Girar</button>
+  <div id="result" aria-live="polite"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+function rainConfetti(ms = 3000) {
+  const end = Date.now() + ms;
+  (function frame() {
+    confetti({ particleCount: 6, startVelocity: 0, gravity: 0.6, ticks: 300, spread: 360, origin: { x: Math.random(), y: -0.05 } });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  })();
+}
+
+const names = ["Ralph", "Kim", "João", "Ingrid", "Carlos", "Marcelo", "Christian"];
+const colors = ["#e5484d", "#f76b15", "#ffc53d", "#30a46c", "#0090ff", "#8e4ec6", "#d6409f"];
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const r = canvas.width / 2;
+const arc = 2 * Math.PI / names.length;
+
+names.forEach((name, i) => {
+  const start = -Math.PI / 2 + i * arc; // segment 0 starts at the top, clockwise
+  ctx.beginPath();
+  ctx.moveTo(r, r);
+  ctx.arc(r, r, r, start, start + arc);
+  ctx.fillStyle = colors[i % colors.length];
+  ctx.fill();
+  ctx.save();
+  ctx.translate(r, r);
+  ctx.rotate(start + arc / 2);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 52px system-ui";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.fillText(name, r - 40, 0);
+  ctx.restore();
+});
+
+let rotation = 0;
+const btn = document.getElementById("spin");
+const result = document.getElementById("result");
+
+btn.onclick = () => {
+  const deg = 360 / names.length;
+  const winner = Math.floor(Math.random() * names.length);
+  const jitter = (Math.random() - 0.5) * deg * 0.8;
+  const target = (360 - (winner + 0.5) * deg + jitter + 360) % 360; // rotation that puts winner under the pointer
+  rotation += 360 * 6 + ((target - rotation % 360) + 360) % 360;
+  btn.disabled = true;
+  result.textContent = "";
+  canvas.style.transform = `rotate(${rotation}deg)`;
+  canvas.addEventListener("transitionend", () => {
+    result.textContent = `🎉 ${names[winner]} abre o Jira!`;
+    btn.disabled = false;
+    rainConfetti();
+  }, { once: true });
+};
+</script>
+</body>
+</html>
