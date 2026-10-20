@@ -13,6 +13,7 @@
   button { font-size: 1.2rem; padding: 12px 32px; border: 0; border-radius: 8px; background: #0c66e4; color: #fff; cursor: pointer; }
   button:disabled { opacity: .5; cursor: default; }
   #result { font-size: 1.6rem; min-height: 2em; text-align: center; }
+  #quote { max-width: 480px; margin: 0; text-align: center; font-style: italic; opacity: .85; }
 </style>
 </head>
 <body>
@@ -21,6 +22,7 @@
   <div class="wheel"><canvas id="c" width="960" height="960"></canvas></div>
   <button id="spin">Girar</button>
   <div id="result" aria-live="polite"></div>
+  <p id="quote" hidden></p>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script>
@@ -60,6 +62,14 @@ names.forEach((name, i) => {
 let rotation = 0;
 const btn = document.getElementById("spin");
 const result = document.getElementById("result");
+const quoteEl = document.getElementById("quote");
+
+// Same quote for the whole day: quote id derived from today's date (API has 1454 quotes).
+const day = Math.floor(Date.now() / 86400000);
+const quotePromise = fetch(`https://dummyjson.com/quotes/${day % 1454 + 1}`)
+  .then(r => r.json())
+  .then(q => `“${q.quote}” — ${q.author}`)
+  .catch(() => null);
 
 btn.onclick = () => {
   const deg = 360 / names.length;
@@ -74,6 +84,11 @@ btn.onclick = () => {
     result.textContent = `🎉 ${names[winner]} abre o Jira!`;
     btn.disabled = false;
     rainConfetti();
+    quotePromise.then(text => {
+      if (!text) return;
+      quoteEl.textContent = `Frase do dia: ${text}`;
+      quoteEl.hidden = false;
+    });
   }, { once: true });
 };
 </script>
